@@ -1,8 +1,6 @@
 extern crate xdrgen;
 extern crate xdr_codec;
 extern crate tempdir;
-#[macro_use]
-extern crate error_chain;
 
 use std::fs::{File, create_dir_all};
 use std::io::{Cursor, Write};
@@ -96,7 +94,7 @@ fn main() {{}}
     if compile.status.success() {
         Ok(())
     } else {
-        bail!("couldn't compile")
+        return Err("couldn't compile".into())
     }
 }
 

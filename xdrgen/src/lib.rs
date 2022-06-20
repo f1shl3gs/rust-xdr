@@ -14,9 +14,6 @@ extern crate xdr_codec as xdr;
 extern crate quote;
 
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
 extern crate log;
 
 #[macro_use]
@@ -32,10 +29,9 @@ use std::fmt::Display;
 use std::env;
 use std::result;
 
-use xdr::Result;
-
 mod spec;
 use spec::{Emit, Emitpack, Symtab};
+use xdr::Error;
 
 fn result_option<T, E>(resopt: result::Result<Option<T>, E>) -> Option<result::Result<T, E>> {
     match resopt {
@@ -49,7 +45,7 @@ fn result_option<T, E>(resopt: result::Result<Option<T>, E>) -> Option<result::R
 ///
 /// `infile` is simply a string used in error messages; it may be empty. `input` is a read stream of
 /// the specification, and `output` is where the generated code is sent.
-pub fn generate<In, Out>(infile: &str, mut input: In, mut output: Out) -> Result<()>
+pub fn generate<In, Out>(infile: &str, mut input: In, mut output: Out) -> Result<(), Error>
 where
     In: Read,
     Out: Write,
@@ -62,8 +58,6 @@ where
         Ok(defns) => Symtab::new(&defns),
         Err(e) => return Err(xdr::Error::from(format!("parse error: {}", e))),
     };
-
-    let xdr = xdr;
 
     let res: Vec<_> = {
         let consts = xdr.constants()
@@ -95,7 +89,7 @@ where
             .chain(typesyns)
             .chain(packers)
             .chain(unpackers)
-            .collect::<Result<Vec<_>>>()?
+            .collect::<Result<Vec<_>, Error>>()?
     };
 
     let _ = writeln!(
@@ -142,7 +136,7 @@ where
 ///
 /// If your specification uses types which are not within the specification, you can provide your
 /// own implementations of `Pack` and `Unpack` for them.
-pub fn compile<P>(infile: P) -> Result<()>
+pub fn compile<P>(infile: P) -> Result<(), Error>
 where
     P: AsRef<Path> + Display,
 {

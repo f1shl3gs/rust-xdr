@@ -20,8 +20,6 @@
 #![crate_type = "lib"]
 
 extern crate byteorder;
-#[macro_use]
-extern crate error_chain;
 
 pub use std::io::{Read, Write};
 use std::ops::Deref;
@@ -33,6 +31,8 @@ pub mod record;
 
 mod error;
 pub use error::*;
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[cfg(test)]
 mod test;
@@ -110,7 +110,7 @@ where
                 vsz += defl.pack(out)?;
             }
         } else {
-            bail!(ErrorKind::InvalidLen(sz));
+            return Err(Error::InvalidLen(sz));
         }
     }
     Ok(vsz)
@@ -146,7 +146,7 @@ pub fn pack_flex<Out: Write, T: Pack<Out>>(
     out: &mut Out,
 ) -> Result<usize> {
     if maxsz.map_or(false, |m| val.len() > m) {
-        bail!(ErrorKind::InvalidLen(maxsz.unwrap()));
+        return Err(Error::InvalidLen(maxsz.unwrap()));
     }
 
     val.pack(out)
@@ -162,7 +162,7 @@ pub fn pack_opaque_flex<Out: Write>(
     out: &mut Out,
 ) -> Result<usize> {
     if maxsz.map_or(false, |m| val.len() > m) {
-        bail!(ErrorKind::InvalidLen(maxsz.unwrap()));
+        return Err(Error::invalidlen(maxsz.unwrap()));
     }
 
     Opaque::borrowed(val).pack(out)
@@ -245,7 +245,7 @@ where
                 set(elem, defl.clone());
             }
         } else {
-            bail!(ErrorKind::InvalidLen(arraysz));
+            return Err(Error::InvalidLen(arraysz));
         }
     }
 
@@ -308,7 +308,7 @@ pub fn unpack_flex<In: Read, T: Unpack<In>>(
     let (elems, mut sz) = Unpack::unpack(input)?;
 
     if maxsz.map_or(false, |m| elems > m) {
-        bail!(ErrorKind::InvalidLen(maxsz.unwrap()));
+        return Err(Error::InvalidLen(maxsz.unwrap()));
     }
 
     let mut out = Vec::with_capacity(elems);
@@ -338,7 +338,7 @@ pub fn unpack_opaque_flex<In: Read>(
     let (elems, mut sz) = Unpack::unpack(input)?;
 
     if maxsz.map_or(false, |m| elems > m) {
-        bail!(ErrorKind::InvalidLen(maxsz.unwrap()));
+        return Err(Error::invalidlen(maxsz.unwrap()));
     }
 
     let mut out = Vec::with_capacity(elems);
@@ -492,8 +492,8 @@ impl<Out: Write, T: Pack<Out>> Pack<Out> for [T] {
 impl<Out: Write, T: Pack<Out>> Pack<Out> for Vec<T> {
     #[inline]
     fn pack(&self, out: &mut Out) -> Result<usize> {
-        if self.len() > u32::max_value() as usize {
-            return Err(ErrorKind::InvalidLen(self.len()).into());
+        if self.len() > u32::MAX as usize {
+            return Err(Error::InvalidLen(self.len()));
         }
 
         (&self[..]).pack(out)
@@ -506,7 +506,7 @@ impl<'a, Out: Write> Pack<Out> for Opaque<'a> {
         let data: &[u8] = self.0.borrow();
 
         if data.len() > u32::max_value() as usize {
-            return Err(ErrorKind::InvalidLen(data.len()).into());
+            return Err(Error::InvalidLen(data.len()));
         }
 
         sz = data.len().pack(out)?;
@@ -665,7 +665,7 @@ impl<In: Read> Unpack<In> for bool {
         i32::unpack(input).and_then(|(v, sz)| match v {
             0 => Ok((false, sz)),
             1 => Ok((true, sz)),
-            v => Err(ErrorKind::InvalidEnum(v).into()),
+            v => Err(Error::InvalidEnum(v)),
         })
     }
 }

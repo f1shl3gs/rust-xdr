@@ -1,5 +1,5 @@
 use std::collections::btree_map::{BTreeMap, Iter};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 use std::io::{Write, stderr};
 
 use std::result;
@@ -9,6 +9,7 @@ use quote::{self, ToTokens, Tokens};
 mod xdr_nom;
 
 use xdr::Error;
+use once_cell::sync::Lazy;
 
 pub type Result<T> = result::Result<T, Error>;
 
@@ -36,19 +37,19 @@ impl ToTokens for Derives {
 
         let mut der = Vec::new();
 
-        if self.contains(COPY) {
+        if self.contains(Derives::COPY) {
             der.push(quote!(Copy))
         }
-        if self.contains(CLONE) {
+        if self.contains(Derives::CLONE) {
             der.push(quote!(Clone))
         }
-        if self.contains(DEBUG) {
+        if self.contains(Derives::DEBUG) {
             der.push(quote!(Debug))
         }
-        if self.contains(EQ) {
+        if self.contains(Derives::EQ) {
             der.push(quote!(Eq))
         }
-        if self.contains(PARTIALEQ) {
+        if self.contains(Derives::PARTIALEQ) {
             der.push(quote!(PartialEq))
         }
 
@@ -57,30 +58,30 @@ impl ToTokens for Derives {
     }
 }
 
-lazy_static! {
-    static ref KEYWORDS: HashSet<&'static str> = {
-        let kws = [
-            "abstract",	"alignof", "as", "become", "box",
-            "break", "const", "continue", "crate", "do",
-            "else", "enum", "extern", "false", "final",
-            "fn", "for", "if", "impl", "in",
-            "let", "loop", "macro", "match", "mod",
-            "move", "mut", "offsetof", "override", "priv",
-            "proc", "pub", "pure", "ref", "return",
-            "Self", "self", "sizeof", "static", "struct",
-            "super", "trait", "true", "type", "typeof",
-            "unsafe", "unsized", "use", "virtual", "where",
-            "while", "yield",
-        ];
+static KEYWORDS: Lazy<BTreeSet<&'static str>> = Lazy::new(|| {
+    let kws = [
+        "abstract",	"alignof", "as", "become", "box",
+        "break", "const", "continue", "crate", "do",
+        "else", "enum", "extern", "false", "final",
+        "fn", "for", "if", "impl", "in",
+        "let", "loop", "macro", "match", "mod",
+        "move", "mut", "offsetof", "override", "priv",
+        "proc", "pub", "pure", "ref", "return",
+        "Self", "self", "sizeof", "static", "struct",
+        "super", "trait", "true", "type", "typeof",
+        "unsafe", "unsized", "use", "virtual", "where",
+        "while", "yield",
+    ];
 
-        kws.into_iter().map(|x| *x).collect()
-    };
-}
+    kws.into_iter()
+        .collect()
+
+});
 
 fn quote_ident<S: AsRef<str>>(id: S) -> quote::Ident {
     let id = id.as_ref();
 
-    if (*KEYWORDS).contains(id) {
+    if KEYWORDS.contains(id) {
         quote::Ident::new(format!("{}_", id))
     } else {
         quote::Ident::new(id)
@@ -222,7 +223,7 @@ impl Type {
         use self::Type::*;
         let mut memoset = HashMap::new();
 
-        let mut memo = match memo {
+        let memo = match memo {
             None => &mut memoset,
             Some(m) => m,
         };
@@ -238,7 +239,7 @@ impl Type {
             &Array(ref ty, ref len) => {
                 let ty = ty.as_ref();
                 let set = match ty {
-                    &Opaque | &String => EQ | PARTIALEQ | COPY | CLONE | DEBUG,
+                    &Opaque | &String => Derives::EQ | Derives::PARTIALEQ | Derives::COPY | Derives::CLONE | Derives::DEBUG,
                     ref ty => ty.derivable(symtab, Some(memo)),
                 };
                 match len.as_i64(symtab) {
@@ -248,9 +249,9 @@ impl Type {
             }
             &Flex(ref ty, ..) => {
                 let set = ty.derivable(symtab, Some(memo));
-                set & !COPY // no Copy, everything else OK
+                set & !Derives::COPY // no Copy, everything else OK
             }
-            &Enum(_) => EQ | PARTIALEQ | COPY | CLONE | DEBUG,
+            &Enum(_) => Derives::EQ | Derives::PARTIALEQ | Derives::COPY | Derives::CLONE | Derives::DEBUG,
             &Option(ref ty) => ty.derivable(symtab, Some(memo)),
             &Struct(ref fields) => {
                 fields.iter().fold(Derives::all(), |a, f| {
@@ -277,10 +278,10 @@ impl Type {
                 }
             }
 
-            &Float | &Double => PARTIALEQ | COPY | CLONE | DEBUG,
+            &Float | &Double => Derives::PARTIALEQ | Derives::COPY | Derives::CLONE | Derives::DEBUG,
             ty if ty.is_prim(symtab) => Derives::all(),
 
-            _ => Derives::all() & !COPY,
+            _ => Derives::all() & !Derives::COPY,
         };
 
         memo.insert(self.clone(), set);

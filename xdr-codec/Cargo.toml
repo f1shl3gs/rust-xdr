@@ -9,6 +9,7 @@ documentation = "https://docs.rs/xdr-codec"
 readme = "README.md"
 keywords = ["encoding", "protocol", "xdr", "rfc4506", "serialization"]
 include = [ "src/**/*.rs", "tests/**/*.rs", "*.md", "Cargo.toml"  ]
+edition = "2021"
 
 [features]
 # Enable use of `Pack`/`Unpack` traits for `i8`/`u8`. Normally this is disabled to
@@ -18,8 +19,7 @@ bytecodec = []
 unstable = []
 
 [dependencies]
-byteorder = "1.0"
-error-chain = "0.10"
+byteorder = "1.4.3"
 
 [dev-dependencies]
-quickcheck = "0.4"
+quickcheck = "1.0.3"
