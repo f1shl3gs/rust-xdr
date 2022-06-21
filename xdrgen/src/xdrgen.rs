@@ -1,7 +1,6 @@
 #![crate_type = "bin"]
 
 extern crate clap;
-extern crate env_logger;
 extern crate xdrgen;
 
 use std::fs::File;
@@ -13,8 +12,6 @@ use clap::App;
 use xdrgen::generate;
 
 fn main() {
-    let _ = env_logger::init();
-
     let matches = App::new("XDR code generator")
         .version(env!("CARGO_PKG_VERSION"))
         .arg_from_usage("[FILE] 'Set .x file'")
