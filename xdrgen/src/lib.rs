@@ -6,7 +6,7 @@
 //! It is intended to be used with the "xdr-codec" crate, which provides the runtime library for
 //! encoding/decoding primitive types, strings, opaque data and arrays.
 
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 
 extern crate xdr_codec as xdr;
 
@@ -22,18 +22,17 @@ extern crate nom;
 #[macro_use]
 extern crate bitflags;
 
-use std::fs::File;
-use std::path::{Path, PathBuf};
-use std::io::{Read, Write};
-use std::fmt::Display;
 use std::env;
-use std::result;
+use std::fmt::Display;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
 
 mod spec;
 use spec::{Emit, Emitpack, Symtab};
 use xdr::Error;
 
-fn result_option<T, E>(resopt: result::Result<Option<T>, E>) -> Option<result::Result<T, E>> {
+fn result_option<T, E>(resopt: Result<Option<T>, E>) -> Option<Result<T, E>> {
     match resopt {
         Ok(None) => None,
         Ok(Some(v)) => Some(Ok(v)),
@@ -60,27 +59,34 @@ where
     };
 
     let res: Vec<_> = {
-        let consts = xdr.constants()
-            .filter_map(|(c, &(v, ref scope))| if scope.is_none() {
-                Some(spec::Const(c.clone(), v))
-            } else {
-                None
+        let consts = xdr
+            .constants()
+            .filter_map(|(c, &(v, ref scope))| {
+                if scope.is_none() {
+                    Some(spec::Const(c.clone(), v))
+                } else {
+                    None
+                }
             })
             .map(|c| c.define(&xdr));
 
-        let typespecs = xdr.typespecs()
+        let typespecs = xdr
+            .typespecs()
             .map(|(n, ty)| spec::Typespec(n.clone(), ty.clone()))
             .map(|c| c.define(&xdr));
 
-        let typesyns = xdr.typesyns()
+        let typesyns = xdr
+            .typesyns()
             .map(|(n, ty)| spec::Typesyn(n.clone(), ty.clone()))
             .map(|c| c.define(&xdr));
 
-        let packers = xdr.typespecs()
+        let packers = xdr
+            .typespecs()
             .map(|(n, ty)| spec::Typespec(n.clone(), ty.clone()))
             .filter_map(|c| result_option(c.pack(&xdr)));
 
-        let unpackers = xdr.typespecs()
+        let unpackers = xdr
+            .typespecs()
             .map(|(n, ty)| spec::Typespec(n.clone(), ty.clone()))
             .filter_map(|c| result_option(c.unpack(&xdr)));
 
@@ -106,7 +112,7 @@ where
     );
 
     for it in res {
-        let _ = writeln!(output, "{}\n", it.as_str());
+        let _ = writeln!(output, "{}\n", it.to_string());
     }
 
     Ok(())

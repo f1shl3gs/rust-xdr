@@ -35,7 +35,7 @@ impl Display for Error {
             Error::InvalidCase(v) => write!(f, "invalid case: {}", v),
             Error::InvalidLen(v) => write!(f, "invalid len: {}", v),
             Error::InvalidEnum(v) => write!(f, "invalid enum: {}", v),
-            Error::Other(s) => write!(f, "other: {}", s)
+            Error::Other(s) => write!(f, "other: {}", s),
         }
     }
 }

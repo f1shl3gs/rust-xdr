@@ -1,7 +1,7 @@
 extern crate xdr_codec;
 
 use std::io::Cursor;
-use xdr_codec::{unpack,pack};
+use xdr_codec::{pack, unpack};
 
 mod simple {
     use xdr_codec;
@@ -11,8 +11,12 @@ mod simple {
 
 fn main() {
     let foo = simple::Foo {
-        a: 1, b: 2, c: 3,
-        bar: vec![simple::Bar { data: vec![1,2,3] }],
+        a: 1,
+        b: 2,
+        c: 3,
+        bar: vec![simple::Bar {
+            data: vec![1, 2, 3],
+        }],
         barish: None,
         name: String::from("foox"),
         thing: simple::Things::C,
@@ -26,7 +30,7 @@ fn main() {
     println!("buf={:?} len={}", buf, buf.len());
 
     let mut cur = Cursor::new(buf);
-    
+
     let foo2 = unpack(&mut cur).unwrap();
 
     println!("foo={:?}", foo);

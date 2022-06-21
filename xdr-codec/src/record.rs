@@ -12,10 +12,10 @@
 //!
 //! There's no magic number or other way to determine whether a stream
 //! is using record marking; both ends must agree.
-use std::io::{self, BufRead, Read, Write};
 use std::cmp::min;
+use std::io::{self, BufRead, Read, Write};
 
-use super::{Error, pack, unpack};
+use super::{pack, unpack, Error};
 
 const LAST_REC: u32 = 1u32 << 31;
 
@@ -34,9 +34,9 @@ fn mapioerr(xdrerr: Error) -> io::Error {
 /// determine record ends.
 #[derive(Debug)]
 pub struct XdrRecordReader<R: BufRead> {
-    size: usize, // record size
+    size: usize,     // record size
     consumed: usize, // bytes consumed
-    eor: bool, // is last record
+    eor: bool,       // is last record
 
     reader: R, // reader
 }
@@ -59,8 +59,9 @@ impl<R: BufRead> XdrRecordReader<R> {
 
         let rechdr: u32 = match unpack(&mut self.reader) {
             Ok(v) => v,
-            Err(Error::Io(ref err))
-                if err.kind() == io::ErrorKind::UnexpectedEof => return Ok(true),
+            Err(Error::Io(ref err)) if err.kind() == io::ErrorKind::UnexpectedEof => {
+                return Ok(true)
+            }
             Err(e) => return Err(mapioerr(e)),
         };
 
@@ -149,9 +150,9 @@ impl<R: BufRead> Iterator for XdrRecordReaderIter<R> {
                 // Do we need next fragment?
                 if rr.totremains() == 0 {
                     match rr.nextrec() {
-                        Err(e) => return Some(Err(e)),  // IO error
-                        Ok(true) => return None,        // EOF
-                        Ok(false) => (),                // keep going
+                        Err(e) => return Some(Err(e)), // IO error
+                        Ok(true) => return None,       // EOF
+                        Ok(false) => (),               // keep going
                     }
                 }
 
@@ -159,9 +160,9 @@ impl<R: BufRead> Iterator for XdrRecordReaderIter<R> {
                 let eor = rr.eor();
 
                 match rr.by_ref().take(remains as u64).read_to_end(&mut buf) {
-                    Ok(sz) if sz == remains => (),  // OK, keep going
-                    Ok(_) => return None,           // short read
-                    Err(e) => return Some(Err(e)),  // error
+                    Ok(sz) if sz == remains => (), // OK, keep going
+                    Ok(_) => return None,          // short read
+                    Err(e) => return Some(Err(e)), // error
                 };
 
                 if eor {
@@ -184,8 +185,8 @@ const WRBUF: usize = 65536;
 pub struct XdrRecordWriter<W: Write> {
     buf: Vec<u8>, // accumulated record fragment
     bufsz: usize, // max fragment size
-    eor: bool, // last fragment was eor
-    writer: W, // writer we're passing on to
+    eor: bool,    // last fragment was eor
+    writer: W,    // writer we're passing on to
 }
 
 impl<W: Write> XdrRecordWriter<W> {

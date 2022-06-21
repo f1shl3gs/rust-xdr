@@ -1,13 +1,13 @@
-extern crate xdrgen;
-extern crate xdr_codec;
 extern crate tempdir;
+extern crate xdr_codec;
+extern crate xdrgen;
 
-use std::fs::{File, create_dir_all};
+use std::fs::{create_dir_all, File};
 use std::io::{Cursor, Write};
 use std::process::Command;
 
-use xdrgen::generate;
 use xdr_codec::Result;
+use xdrgen::generate;
 
 fn build_test(name: &str, xdr_spec: &str) -> Result<()> {
     let tempdir = tempdir::TempDir::new("build").expect("Failed to make tempdir");
@@ -77,10 +77,11 @@ fn main() {{}}
     let compile = {
         let mut cmd = Command::new("cargo");
         let cmd = cmd
-               .current_dir(std::env::current_dir()?)
-               //.env("CARGO_HOME", cargohome)
-               .arg("test")
-               .arg("--manifest-path").arg(cargotoml);
+            .current_dir(std::env::current_dir()?)
+            //.env("CARGO_HOME", cargohome)
+            .arg("test")
+            .arg("--manifest-path")
+            .arg(cargotoml);
         println!("CWD: {:?} Command: {:?}", std::env::current_dir(), cmd);
         cmd.output()?
     };
@@ -94,7 +95,7 @@ fn main() {{}}
     if compile.status.success() {
         Ok(())
     } else {
-        return Err("couldn't compile".into())
+        return Err("couldn't compile".into());
     }
 }
 
