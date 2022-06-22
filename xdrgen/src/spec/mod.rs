@@ -1,5 +1,5 @@
 use std::collections::btree_map::{BTreeMap, Iter};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::io::{stderr, Write};
 
 use std::result;
@@ -9,7 +9,6 @@ use quote::{self, ToTokens};
 
 mod xdr_nom;
 
-use once_cell::sync::Lazy;
 use quote::__private::{Ident, TokenStream};
 use xdr::Error;
 
@@ -59,7 +58,8 @@ impl ToTokens for Derives {
     }
 }
 
-static KEYWORDS: Lazy<BTreeSet<&'static str>> = Lazy::new(|| {
+fn quote_ident<S: AsRef<str>>(id: S) -> Ident {
+    let id = id.as_ref();
     let kws = [
         "abstract", "alignof", "as", "become", "box", "break", "const", "continue", "crate", "do",
         "else", "enum", "extern", "false", "final", "fn", "for", "if", "impl", "in", "let", "loop",
@@ -68,13 +68,7 @@ static KEYWORDS: Lazy<BTreeSet<&'static str>> = Lazy::new(|| {
         "true", "type", "typeof", "unsafe", "unsized", "use", "virtual", "where", "while", "yield",
     ];
 
-    kws.into_iter().collect()
-});
-
-fn quote_ident<S: AsRef<str>>(id: S) -> Ident {
-    let id = id.as_ref();
-
-    if KEYWORDS.contains(id) {
+    if kws.contains(&id) {
         format_ident!("{}_", id)
     } else {
         format_ident!("{}", id)
