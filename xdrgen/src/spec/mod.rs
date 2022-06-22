@@ -346,7 +346,7 @@ impl Type {
                 match ty {
                     &Opaque | &String => {
                         quote!({
-                            let mut buf: [u8; #value as usize] = unsafe { ::std::mem::uninitialized() };
+                            let mut buf: [u8; #value as usize] = [0; #value as usize];
                             let sz = xdr_codec::unpack_opaque_array(input, &mut buf[..], #value as usize)?;
                             (buf, sz)
                         })
