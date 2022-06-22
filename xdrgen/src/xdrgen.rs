@@ -1,39 +1,75 @@
 #![crate_type = "bin"]
 
-extern crate clap;
-extern crate xdrgen;
-
+use std::env;
 use std::fs::File;
-use std::io::{stderr, stdin, stdout};
 use std::io::{BufReader, Write};
-
-use clap::App;
+use std::process::exit;
 
 use xdrgen::generate;
 
+fn help() {
+    println!(
+        r#"XDR code generator {}
+
+USAGE:
+    xdrgen [FILE]
+
+ARGS:
+    <FILE>  Set *.x file
+
+OPTIONS:
+    -h, --help      Print help information
+    -V, --version   Print version information
+"#,
+        env!("CARGO_PKG_VERSION")
+    )
+}
+
 fn main() {
-    let matches = App::new("XDR code generator")
-        .version(env!("CARGO_PKG_VERSION"))
-        .arg_from_usage("[FILE] 'Set .x file'")
-        .get_matches();
+    let output = std::io::stdout();
+    let mut stderr = std::io::stderr();
 
-    let output = stdout();
-    let mut err = stderr();
+    let args: Vec<String> = env::args().collect();
+    let result = match args.len() {
+        // no arguments passed, read from stdin
+        1 => generate("stdin", BufReader::new(std::io::stdin()), output),
 
-    let res = if let Some(fname) = matches.value_of("FILE") {
-        let f = match File::open(fname) {
-            Ok(f) => f,
-            Err(e) => {
-                let _ = writeln!(&mut err, "Failed to open {}: {}", fname, e);
-                std::process::exit(1);
+        // one argument passed
+        2 => {
+            let arg = args[1].trim();
+            if arg == "-h" || arg == "--help" {
+                help();
+                return;
             }
-        };
-        generate(fname, BufReader::new(f), output)
-    } else {
-        generate("stdin", BufReader::new(stdin()), output)
+
+            if arg == "-V" || arg == "--version" {
+                println!("XDR code generator {}", env!("CARGO_PKG_VERSION"));
+                return;
+            }
+
+            if arg.starts_with("-") {
+                help();
+                return;
+            }
+
+            let f = match File::open(arg) {
+                Ok(f) => f,
+                Err(e) => {
+                    let _ = writeln!(&mut stderr, "Failed to open {}: {}", arg, e);
+                    exit(1);
+                }
+            };
+
+            generate(arg, BufReader::new(f), output)
+        }
+        _ => {
+            help();
+            exit(1);
+        }
     };
 
-    if let Err(e) = res {
-        let _ = writeln!(&mut err, "Failed: {}", e);
+    if let Err(err) = result {
+        let _ = writeln!(&mut stderr, "Failed: {}", err);
+        exit(1);
     }
 }
