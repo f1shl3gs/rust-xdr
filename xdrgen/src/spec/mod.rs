@@ -381,7 +381,7 @@ impl Type {
                             fn uninit_ptr_dropper<T>(p: &mut T) {
                                 unsafe { ::std::ptr::drop_in_place(p) }
                             }
-                            let mut buf: [#ty; #value as usize] = [0 as $ty; $value as usize];
+                            let mut buf: [#ty; #value as usize] = [0; #value as usize];
                             let res = ::std::panic::catch_unwind(
                                 ::std::panic::AssertUnwindSafe(||
                                     xdr_codec::unpack_array_with(
