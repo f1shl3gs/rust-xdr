@@ -22,7 +22,7 @@ doc = false
 unstable = []
 
 [dependencies]
-log = "0.4.17"
+log = "0.4"
 nom = { version="3.1", features=["verbose-errors"] }
 quote = "1.0.20"
 clap = "3.2.5"
